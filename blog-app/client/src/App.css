@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+
+@layer components {
+  .search {
+    @apply w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 transition-all duration-200 ease-in-out focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none;
+  }
+
+  .butt {
+    @apply px-4 py-2 rounded-lg font-semibold text-white bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 shadow-lg hover:from-pink-500 hover:via-red-500 hover:to-yellow-500 transition-all duration-300 ease-in-out transform hover:scale-105;
+  }
+
+  .butt1 {
+    @apply px-7 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold transition-all duration-300 hover:-translate-y-1 active:scale-95 cursor-pointer;
+
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
+  }
+
+  .butt1:hover {
+    box-shadow: 0 0 30px rgba(6, 182, 212, 0.8);
+  }
+
+
+  .butt2 {
+    @apply px-6 py-2 border-2 border-indigo-500/50 bg-indigo-500/10 text-indigo-400 font-medium rounded-lg hover:bg-indigo-500 hover:text-white transition-colors duration-300 backdrop-blur-md;
+  }
+
+  .btn-home {
+    @apply flex items-center gap-3 px-7 py-2.5 text-lg font-bold rounded-2xl text-white shadow-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-105 active:scale-95 cursor-pointer;
+
+    box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+  }
+
+  .btn-home:hover {
+    box-shadow: 0 15px 30px rgba(79, 70, 229, 0.5);
+  }
+
+  .blog-card {
+    @apply bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer p-2 m-2 flex flex-col;
+  }
+
+  .blog-image {
+    @apply w-full h-48 object-cover transition-transform duration-300 hover:scale-105 py-1.5;
+  }
+
+  .blog-content {
+    @apply p-5 flex flex-col gap-3;
+  }
+
+  .blog-category {
+    @apply text-xs font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full m-1.5 w-fit;
+  }
+
+  .blog-title {
+    @apply text-lg font-bold text-gray-900 leading-snug hover:text-indigo-600 transition-colors duration-200 m-1;
+  }
+
+  .blog-description {
+    @apply text-sm text-gray-600 leading-relaxed line-clamp-3 m-1;
+  }
+
+  .blog-section {
+    @apply max-w-7xl mx-auto px-3 py-5;
+  }
+
+  .blog-grid {
+    @apply grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
+  }
+
+  .butt-3 {
+    @apply px-3 py-1 rounded-md text-[#e14747] transition-all duration-300 ease-in-out hover:bg-[#6c5784] hover:shadow-md active:scale-95;
+
+
+  }
+
+  .date {
+    @apply flex justify-center p-5;
+  }
+
+  .navbar {
+    @apply sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-white/80 backdrop-blur-md border-b border-gray-200;
+  }
+
+  .back {
+    @apply inline-flex items-center my-1.5 mx-3 px-4 py-1 rounded-lg font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 transition-colors duration-300 ease-in-out shadow-sm;
+  }
+
+  .input {
+    @apply w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 m-3 focus:ring-blue-500;
+  }
+
+  .textarea {
+    @apply w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mx-4 my-2;
+  }
+
+  .stats {
+    @apply w-[27vh] border-2 overflow-hidden mx-2 h-[15vh] rounded-2xl p-1 flex items-center gap-2;
+  }
+
+  .active-side {
+    @apply bg-indigo-50 text-indigo-600 font-medium shadow-sm;
+  }
+
+  .side {
+    @applytext-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200 ease-in-out;
+  }
+
+}
