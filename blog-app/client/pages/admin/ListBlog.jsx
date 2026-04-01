@@ -1,33 +1,64 @@
-import React from 'react'
-import { FileText } from 'lucide-react'
- import BlogTableItem from '../../src/components/admin/BlogTableItem'
+import React, { useContext, useEffect, useState } from "react";
+import { FileText } from "lucide-react";
+import BlogTableItem from "../../src/components/admin/BlogTableItem";
+import { AppContext } from "../../context/AppContext";
+import { toast } from "react-hot-toast";
 const ListBlog = () => {
   // Mock data
-  const blogs = [
-    { id: 1, title: 'The Rise of Artificial Intelligence in Modern Technology', author: 'Alex Doe', date: 'Jan 15, 2026' },
-    { id: 2, title: 'Importance of Tourism', author: 'Sarah Smith', date: 'Jan 14, 2026' },
-    { id: 3, title: 'The New Way of Study', author: 'John Brown', date: 'Jan 12, 2026' },
-    { id: 4, title: 'Taxes on Luxury Houses', author: 'Emily White', date: 'Jan 10, 2026' },
-    { id: 5, title: 'Future of Space Exploration', author: 'David Wilson', date: 'Jan 08, 2026' },
-    { id: 6, title: 'Healthy Eating Habits', author: 'Lisa Green', date: 'Jan 05, 2026' },
-  ]
-  const handleUnpublish = (id) => {
-    console.log('Unpublish blog:', id)
-  }
-  const handleDelete = (id) => {
-    console.log('Delete blog:', id)
-  }
+  const [blogs, setblogs] = useState([]);
+  const { axios } = useContext(AppContext);
+
+  const handleDelete = async (id) => {
+    try {
+      const { data } = await axios.post("/api/blog/delete", { id });
+      if (data.success) {
+        toast.success("Blog deleted");
+        fetchBlogs();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleUnpublish = async (id) => {
+    try {
+      const { data } = await axios.post("/api/blog/toggle-publish", { id });
+      if (data.success) {
+        toast.success(data.message);
+        fetchBlogs();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const fetchBlogs = async () => {
+    try {
+      const { data } = await axios.get("/api/admin/blogs");
+      data.success ? setblogs(data.blogs) : toast.error(data.message);
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+  useEffect(() => {
+    fetchBlogs();
+  }, []);
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-            <div className="p-2 bg-indigo-100 rounded-lg">
-                <FileText className="w-6 h-6 text-indigo-600" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-800">All Blogs</h1>
+          <div className="p-2 bg-indigo-100 rounded-lg">
+            <FileText className="w-6 h-6 text-indigo-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-800">All Blogs</h1>
         </div>
         <div className="text-sm text-gray-500">
-            Total: <span className="font-semibold text-gray-800">{blogs.length}</span>
+          Total:{" "}
+          <span className="font-semibold text-gray-800">{blogs.length}</span>
         </div>
       </div>
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -44,12 +75,12 @@ const ListBlog = () => {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {blogs.map((blog, index) => (
-                <BlogTableItem 
-                    key={blog.id} 
-                    blog={blog} 
-                    index={index} 
-                    onUnpublish={handleUnpublish}
-                    onDelete={handleDelete}
+                <BlogTableItem
+                  key={blog.id}
+                  blog={blog}
+                  index={index}
+                  onUnpublish={handleUnpublish}
+                  onDelete={handleDelete}
                 />
               ))}
             </tbody>
@@ -57,6 +88,6 @@ const ListBlog = () => {
         </div>
       </div>
     </div>
-  )
-}
-export default ListBlog
+  );
+};
+export default ListBlog;

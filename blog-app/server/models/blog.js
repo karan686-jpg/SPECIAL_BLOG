@@ -26,6 +26,24 @@ const blogSchema= new mongoose.Schema(
             type:Boolean,
             required:true,
         },
+        author: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+        },
+        authorName: {
+            type: String,
+            default: "Admin",
+        },
+        views: {
+            type: Number,
+            default: 0,
+        },
+        likes: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User",
+            }
+        ],
     },
     {
         timestamps: true,

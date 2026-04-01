@@ -36,7 +36,7 @@ export const getAllBlogsAdmin = async (req, res) => {
 
 export const getAllComments = async (req, res) => {
     try {
-        const comments = await Comment.find({}).populate("blog".sort({ createdAt: -1 }))
+        const comments = await Comment.find({}).populate('blog').sort({ createdAt: -1 })
         res.json({ success: true, comments })
 
     } catch (error) {
@@ -68,7 +68,7 @@ export const getDashboard = async (req, res) => {
 
 export const deleteCommentById = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { id } = req.body;
         const comment = await Comment.findByIdAndDelete(id)
         if (!comment) {
             return res.json({ success: false, message: "Comment not found" })
@@ -81,7 +81,7 @@ export const deleteCommentById = async (req, res) => {
 
 export const approveCommentById = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { id } = req.body;
         const comment = await Comment.findByIdAndUpdate(id, { isApproved: true })
         if (!comment) {
             return res.json({ success: false, message: "Comment not found" })

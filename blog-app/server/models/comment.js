@@ -11,13 +11,17 @@ const commentSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     content: {
       type: String,
       required: true,
     },
     isApproved: {
       type: Boolean,
-      default: false,
+      default: true,
     },
   },
   {

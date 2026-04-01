@@ -1,24 +1,69 @@
-import React from 'react'
-import { FileText, MessageSquare, FileEdit, Trash2, XCircle } from 'lucide-react'
+import React, { useContext, useEffect, useState } from "react";
+import { FileText, MessageSquare, FileEdit, XCircle } from "lucide-react";
+import { AppContext } from "../../context/AppContext";
+import { toast } from "react-hot-toast";
+
 const Dashboard = () => {
-  // Mock data
+  const { axios } = useContext(AppContext);
+  const [dashboardData, setDashboardData] = useState({
+    blogs: 0,
+    comments: 0,
+    drafts: 0,
+    recentBlogs: [],
+  });
+
+  const fetchDashboard = async () => {
+    try {
+      const { data } = await axios.get("/api/admin/dashboard");
+      if (data.success) {
+        setDashboardData(data.dashboardData);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboard();
+  }, []);
+
+  const { blogs, comments, drafts, recentBlogs } = dashboardData;
+
   const stats = [
-    { label: 'Blogs', value: 10, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-100' },
-    { label: 'Comments', value: 2, icon: MessageSquare, color: 'text-indigo-600', bg: 'bg-indigo-100' },
-    { label: 'Drafts', value: 0, icon: FileEdit, color: 'text-purple-600', bg: 'bg-purple-100' },
-  ]
-  const latestBlogs = [
-    { id: 1, title: 'The Rise of Artificial Intelligence in Modern Technology' },
-    { id: 2, title: 'Importance of Tourism' },
-    { id: 3, title: 'The New Way of Study' },
-    { id: 4, title: 'Taxes on Luxury Houses' },
-  ]
+    {
+      label: "Blogs",
+      value: blogs,
+      icon: FileText,
+      color: "text-blue-600",
+      bg: "bg-blue-100",
+    },
+    {
+      label: "Comments",
+      value: comments,
+      icon: MessageSquare,
+      color: "text-indigo-600",
+      bg: "bg-indigo-100",
+    },
+    {
+      label: "Drafts",
+      value: drafts,
+      icon: FileEdit,
+      color: "text-purple-600",
+      bg: "bg-purple-100",
+    },
+  ];
+
   return (
     <div className="space-y-8">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {stats.map((stat, index) => (
-          <div key={index} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 transition-transform hover:scale-[1.02]">
+          <div
+            key={index}
+            className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 transition-transform hover:scale-[1.02]"
+          >
             <div className={`p-4 rounded-lg ${stat.bg}`}>
               <stat.icon className={`w-8 h-8 ${stat.color}`} />
             </div>
@@ -35,38 +80,51 @@ const Dashboard = () => {
           <FileText className="w-5 h-5 text-indigo-600" />
           <h2 className="text-lg font-semibold text-gray-800">Latest Blogs</h2>
         </div>
-        
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
               <tr>
                 <th className="px-6 py-4">#</th>
                 <th className="px-6 py-4 w-full">Blog Title</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+                <th className="px-6 py-4 text-right">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {latestBlogs.map((blog, index) => (
-                <tr key={blog.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-gray-500 font-medium">{index + 1}</td>
-                  <td className="px-6 py-4 text-gray-800 font-medium">{blog.title}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-end gap-3">
-                      <button className="px-4 py-1.5 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-800 transition-colors">
-                        Unpublish
-                      </button>
-                      <button className="p-1.5 text-red-500 hover:bg-red-50 rounded-full transition-colors" title="Delete">
-                        <XCircle className="w-5 h-5" />
-                      </button>
-                    </div>
+              {recentBlogs.map((blog, index) => (
+                <tr
+                  key={blog._id}
+                  className="hover:bg-gray-50 transition-colors"
+                >
+                  <td className="px-6 py-4 text-gray-500 font-medium">
+                    {index + 1}
+                  </td>
+                  <td className="px-6 py-4 text-gray-800 font-medium">
+                    {blog.title}
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full font-medium ${blog.isPublished ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}
+                    >
+                      {blog.isPublished ? "Published" : "Draft"}
+                    </span>
                   </td>
                 </tr>
               ))}
+              {recentBlogs.length === 0 && (
+                <tr>
+                  <td
+                    colSpan="3"
+                    className="px-6 py-8 text-center text-gray-400"
+                  >
+                    No blogs yet. Start writing!
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
     </div>
-  )
-}
-export default Dashboard
+  );
+};
+export default Dashboard;
