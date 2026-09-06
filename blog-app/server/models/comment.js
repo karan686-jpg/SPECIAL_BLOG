@@ -7,9 +7,16 @@ const commentSchema = new mongoose.Schema(
       ref: "Blog",
       required: true,
     },
+    parentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Comment",
+      default: null,
+    },
     name: {
       type: String,
       required: true,
+      trim: true,
+      maxlength: 80,
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -18,6 +25,8 @@ const commentSchema = new mongoose.Schema(
     content: {
       type: String,
       required: true,
+      trim: true,
+      maxlength: 2000,
     },
     isApproved: {
       type: Boolean,
@@ -28,6 +37,9 @@ const commentSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+commentSchema.index({ blog: 1, isApproved: 1, createdAt: -1 });
+commentSchema.index({ blog: 1, parentId: 1 });
 
 const Comment = mongoose.model("Comment", commentSchema);
 

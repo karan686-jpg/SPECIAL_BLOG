@@ -1,40 +1,158 @@
 import React, { useState, useRef, useContext, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import {
+  Save,
+  Clock,
+  Sparkles,
+  CheckCircle2,
+} from "lucide-react";
 import { AppContext } from "../../context/AppContext";
 import "quill/dist/quill.snow.css";
+import AIAssistantDrawer from "../../src/components/AIAssistantDrawer";
+import CategorySelector from "../../src/components/CategorySelector";
+import DraftRecoveryBanner from "../../src/components/editor/DraftRecoveryBanner";
+import CoverImageUploader from "../../src/components/editor/CoverImageUploader";
+import PublishScheduler from "../../src/components/editor/PublishScheduler";
+
+const DRAFT_STORAGE_KEY = "blog_author_draft";
 
 const AddBlog = () => {
-  const { axios, fetchBlogs, navigate } = useContext(AppContext);
+  const { axios, fetchBlogs } = useContext(AppContext);
+  const navigate = useNavigate();
   const [isAdding, setIsAdding] = useState(false);
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
+  const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
 
   const [image, setImage] = useState(null);
   const [title, setTitle] = useState("");
   const [subTitle, setSubTitle] = useState("");
   const [category, setCategory] = useState("Lifestyle");
-  const [isPublished, setIsPublished] = useState(true);
   const [description, setDescription] = useState("");
 
-  const fileInputRef = useRef(null);
+  // Publishing & Scheduling state
+  // "publish" | "draft" | "schedule"
+  const [publishMode, setPublishMode] = useState("publish");
+  const [scheduledDate, setScheduledDate] = useState("");
 
-  // Initialize Quill editor after mount
+  // Local Draft Auto-Save State
+  const [autoSaveStatus, setAutoSaveStatus] = useState(null);
+  const [hasExistingDraft, setHasExistingDraft] = useState(null);
+
+  const fileInputRef = useRef(null);
   const editorRef = useRef(null);
   const quillRef = useRef(null);
 
+  // Initialize Quill editor after mount with strict duplicate toolbar cleanup
   useEffect(() => {
-    if (editorRef.current && !quillRef.current) {
+    let isCancelled = false;
+
+    if (editorRef.current) {
+      // Clean up any previously injected duplicate toolbars from container
+      const container = editorRef.current.parentElement;
+      if (container) {
+        const existingToolbars = container.querySelectorAll(".ql-toolbar");
+        existingToolbars.forEach((tb) => tb.remove());
+      }
+      editorRef.current.innerHTML = "";
+
       import("quill").then((QuillModule) => {
+        if (isCancelled || !editorRef.current) return;
         const Quill = QuillModule.default;
-        quillRef.current = new Quill(editorRef.current, {
+        const qInstance = new Quill(editorRef.current, {
           theme: "snow",
-          placeholder: "Write blog content here...",
+          placeholder: "Write your masterpiece here...",
         });
-        quillRef.current.on("text-change", () => {
-          setDescription(quillRef.current.root.innerHTML);
+        quillRef.current = qInstance;
+
+        if (description) {
+          qInstance.root.innerHTML = description;
+        }
+
+        qInstance.on("text-change", () => {
+          setDescription(qInstance.root.innerHTML);
         });
       });
     }
+
+    return () => {
+      isCancelled = true;
+      if (editorRef.current?.parentElement) {
+        const toolbars =
+          editorRef.current.parentElement.querySelectorAll(".ql-toolbar");
+        toolbars.forEach((tb) => tb.remove());
+      }
+      quillRef.current = null;
+    };
   }, []);
+
+  // Check for unsaved local draft on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.title || parsed.description || parsed.subTitle) {
+          setHasExistingDraft(parsed);
+        }
+      }
+    } catch (e) {
+      console.error("Error reading draft", e);
+    }
+  }, []);
+
+  // Debounced Auto-Save to LocalStorage (800ms)
+  useEffect(() => {
+    if (!title && !description && !subTitle) return undefined;
+
+    const timer = setTimeout(() => {
+      const currentDesc = quillRef.current
+        ? quillRef.current.root.innerHTML
+        : description;
+      const draft = {
+        title,
+        subTitle,
+        category,
+        description: currentDesc,
+        savedAt: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      };
+      try {
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+        setAutoSaveStatus(`Auto-saved at ${draft.savedAt}`);
+      } catch (e) {
+        console.error("Failed to auto-save draft", e);
+      }
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [title, subTitle, category, description]);
+
+  const restoreDraft = () => {
+    if (!hasExistingDraft) return;
+    setTitle(hasExistingDraft.title || "");
+    setSubTitle(hasExistingDraft.subTitle || "");
+    setCategory(hasExistingDraft.category || "Lifestyle");
+    setDescription(hasExistingDraft.description || "");
+    if (quillRef.current) {
+      quillRef.current.root.innerHTML = hasExistingDraft.description || "";
+    }
+    toast.success("Unsaved draft restored successfully!");
+    setHasExistingDraft(null);
+  };
+
+  const discardDraft = () => {
+    try {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+    setHasExistingDraft(null);
+    setAutoSaveStatus(null);
+    toast("Draft discarded");
+  };
 
   const generateDraft = async (e) => {
     e.preventDefault();
@@ -44,7 +162,7 @@ const AddBlog = () => {
     }
     try {
       setIsGeneratingDraft(true);
-      toast("Drafting content...");
+      toast("AI drafting content...");
       const response = await axios.post("/api/blog/generate-ai-content", {
         prompt: title,
       });
@@ -77,6 +195,19 @@ const AddBlog = () => {
       toast.error("Please select a thumbnail image.");
       return;
     }
+
+    if (publishMode === "schedule") {
+      if (!scheduledDate) {
+        toast.error("Please select a date and time for scheduled publishing.");
+        return;
+      }
+      const selected = new Date(scheduledDate);
+      if (selected <= new Date()) {
+        toast.error("Scheduled time must be in the future.");
+        return;
+      }
+    }
+
     try {
       setIsAdding(true);
       const blogData = {
@@ -86,7 +217,9 @@ const AddBlog = () => {
           ? quillRef.current.root.innerHTML
           : description,
         category,
-        isPublished,
+        isPublished: publishMode !== "draft",
+        scheduledFor:
+          publishMode === "schedule" ? new Date(scheduledDate).toISOString() : null,
       };
 
       const formData = new FormData();
@@ -95,16 +228,27 @@ const AddBlog = () => {
 
       const { data } = await axios.post("/api/blog/add", formData);
       if (data.success) {
-        toast.success(data.message);
-        await fetchBlogs(); // refresh the global blog list
+        toast.success(
+          publishMode === "schedule"
+            ? "Story scheduled successfully!"
+            : data.message
+        );
+        // Clear local backup draft
+        try {
+          localStorage.removeItem(DRAFT_STORAGE_KEY);
+        } catch {
+          // ignore
+        }
+        await fetchBlogs();
         if (quillRef.current) quillRef.current.root.innerHTML = "";
         setTitle("");
         setSubTitle("");
         setDescription("");
         setImage(null);
         setCategory("Lifestyle");
-        setIsPublished(true);
-        navigate("/"); // go to home page so user sees their new post
+        setPublishMode("publish");
+        setScheduledDate("");
+        navigate("/");
       } else {
         toast.error(data.message || "Error adding blog");
       }
@@ -116,101 +260,173 @@ const AddBlog = () => {
     }
   };
 
-  const uploadIconUrl =
-    "https://www.lifewire.com/thmb/TRGYpWa4KzxUt1Fkgr3FqjOd6VQ=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/cloud-upload-a30f385a928e44e199a62210d578375a.jpg";
+  // Min date for scheduler: 5 minutes from now in YYYY-MM-DDTHH:mm
+  const minDateTime = new Date(Date.now() + 5 * 60 * 1000)
+    .toISOString()
+    .slice(0, 16);
+
+  const wordCount = description
+    ? description
+        .replace(/<[^>]*>/g, " ")
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean).length
+    : 0;
+  const readTime = Math.max(1, Math.ceil(wordCount / 200));
 
   return (
-    <form
-      onSubmit={onSubmitHandler}
-      className="flex flex-col gap-4 p-5 sm:p-10"
-    >
-      <div>Upload thumbnail</div>
-      <div
-        onClick={() => fileInputRef.current.click()}
-        className="cursor-pointer w-fit"
-      >
-        <img
-          className="max-h-[10vh] max-w-[10vh] object-cover"
-          src={image ? URL.createObjectURL(image) : uploadIconUrl}
-          alt="upload"
-        />
+    <div className="w-full">
+      {/* Studio Header Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-6 mb-6 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+            📖 {readTime} min read • {wordCount} words
+          </span>
+          {autoSaveStatus && (
+            <span className="flex items-center gap-1 text-xs font-mono text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>{autoSaveStatus}</span>
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsAIAssistantOpen(true)}
+            className="inline-flex items-center gap-1.5 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer"
+            type="button"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+            <span>AI Assistant</span>
+          </button>
+          <button
+            onClick={generateDraft}
+            disabled={isGeneratingDraft}
+            className="inline-flex items-center gap-1.5 bg-gray-900 hover:bg-gray-800 dark:bg-gray-100 dark:hover:bg-white text-white dark:text-gray-900 px-3 py-1.5 rounded-xl text-xs font-semibold transition disabled:opacity-50 cursor-pointer"
+            type="button"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>{isGeneratingDraft ? "Drafting..." : "Auto-Draft"}</span>
+          </button>
+        </div>
       </div>
-      {/* Hidden file input */}
-      <input
-        onChange={onImageChange}
-        type="file"
-        id="image"
-        hidden
-        ref={fileInputRef}
+
+      {/* 🛡️ Crash Protection Restore Banner */}
+      <DraftRecoveryBanner
+        draft={hasExistingDraft}
+        onRestore={restoreDraft}
+        onDiscard={discardDraft}
       />
 
-      <div>Blog title</div>
-      <input
-        name="title"
-        onChange={(e) => setTitle(e.target.value)}
-        value={title}
-        className="search max-w-[60vh] border p-2"
-        placeholder="Type here"
-        required
-      />
+      <form onSubmit={onSubmitHandler} className="flex flex-col gap-6">
+        {/* Notion-Style Cover Image Zone */}
+        <CoverImageUploader
+          image={image}
+          onImageChange={onImageChange}
+          onRemoveImage={() => setImage(null)}
+          fileInputRef={fileInputRef}
+        />
 
-      <div>Blog Subtitle</div>
-      <input
-        name="subTitle"
-        onChange={(e) => setSubTitle(e.target.value)}
-        value={subTitle}
-        className="search max-w-[60vh] border p-2"
-        placeholder="Optional subtitle"
-      />
+        {/* Medium-Grade Borderless Headline */}
+        <div>
+          <input
+            name="title"
+            onChange={(e) => setTitle(e.target.value)}
+            value={title}
+            className="w-full text-3xl sm:text-5xl font-editorial font-bold bg-transparent border-none outline-none focus:outline-none placeholder:text-gray-300 dark:placeholder:text-gray-700 text-gray-900 dark:text-gray-50 transition leading-tight"
+            placeholder="Title..."
+            required
+          />
+        </div>
 
-      <div className="flex justify-between items-center max-w-[60vh]">
-        <div>Blog Description</div>
+        {/* Medium-Grade Borderless Subtitle */}
+        <div>
+          <input
+            name="subTitle"
+            onChange={(e) => setSubTitle(e.target.value)}
+            value={subTitle}
+            className="w-full text-lg sm:text-xl font-sans text-gray-500 dark:text-gray-400 bg-transparent border-none outline-none focus:outline-none placeholder:text-gray-300 dark:placeholder:text-gray-700 transition"
+            placeholder="Tell your story or write a brief teaser..."
+          />
+        </div>
+
+        <hr className="border-gray-100 dark:border-gray-800 my-1" />
+
+        {/* Description Editor (Clean Unified Card - No Gaudy Neon Buttons) */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+              Story Content
+            </label>
+            <span className="text-[11px] text-gray-400">
+              Rich editorial formatting enabled
+            </span>
+          </div>
+
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#090d16] transition-all shadow-xs focus-within:border-purple-500/80 focus-within:ring-2 focus-within:ring-purple-500/10">
+            <div ref={editorRef} />
+          </div>
+        </div>
+
+        {/* Dynamic & Customizable Category Selector */}
+        <CategorySelector
+          selectedCategory={category}
+          onSelectCategory={(cat) => setCategory(cat)}
+        />
+
+        {/* 🕒 Publishing Options & Scheduler */}
+        <PublishScheduler
+          publishMode={publishMode}
+          setPublishMode={setPublishMode}
+          scheduledDate={scheduledDate}
+          setScheduledDate={setScheduledDate}
+          minDateTime={minDateTime}
+        />
+
+        {/* Submit Button */}
         <button
-          onClick={generateDraft}
-          disabled={isGeneratingDraft}
-          className="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 disabled:opacity-50 transition-colors"
-          type="button"
+          disabled={isAdding}
+          type="submit"
+          className="inline-flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-3.5 px-8 rounded-xl font-bold text-sm shadow-md shadow-purple-500/20 transition-all cursor-pointer disabled:opacity-50"
         >
-          {isGeneratingDraft ? "Drafting..." : "Auto-Draft Content"}
+          <Save className="w-4 h-4" />
+          <span>
+            {isAdding
+              ? "Saving..."
+              : publishMode === "schedule"
+                ? "Schedule Story"
+                : publishMode === "draft"
+                  ? "Save as Draft"
+                  : "Publish Story Now"}
+          </span>
         </button>
-      </div>
-      {/* Quill editor container */}
-      <div ref={editorRef} className="max-w-[60vh] min-h-[200px] border" />
+      </form>
 
-      <div>Blog Category</div>
-      <select
-        name="category"
-        onChange={(e) => setCategory(e.target.value)}
-        value={category}
-        className="border p-2 max-w-[60vh]"
-      >
-        <option value="Lifestyle">Lifestyle</option>
-        <option value="Technology">Technology</option>
-        <option value="Startup">Startup</option>
-        <option value="Finance">Finance</option>
-        <option value="Creative">Creative</option>
-      </select>
-
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="isPublished"
-          checked={isPublished}
-          onChange={(e) => setIsPublished(e.target.checked)}
-        />
-        <label htmlFor="isPublished">
-          Published (uncheck to save as draft)
-        </label>
-      </div>
-
-      <button
-        disabled={isAdding}
-        type="submit"
-        className="bg-black text-white w-32 py-3 mt-4"
-      >
-        {isAdding ? "Adding..." : "ADD Blog"}
-      </button>
-    </form>
+      {/* ✨ AI Blog Writing Assistant Drawer */}
+      <AIAssistantDrawer
+        isOpen={isAIAssistantOpen}
+        onClose={() => setIsAIAssistantOpen(false)}
+        title={title}
+        content={description}
+        onApplyTitle={(newTitle) => setTitle(newTitle)}
+        onApplySubtitle={(newSub) => setSubTitle(newSub)}
+        onApplyContent={(newHtml) => {
+          if (quillRef.current) {
+            quillRef.current.root.innerHTML = newHtml;
+          }
+          setDescription(newHtml);
+        }}
+        onInsertSummary={(summaryHtml) => {
+          if (quillRef.current) {
+            const current = quillRef.current.root.innerHTML;
+            const updated = `${summaryHtml}<br/>${current}`;
+            quillRef.current.root.innerHTML = updated;
+            setDescription(updated);
+          }
+        }}
+      />
+    </div>
   );
 };
+
 export default AddBlog;

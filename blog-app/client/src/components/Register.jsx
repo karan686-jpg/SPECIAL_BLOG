@@ -4,7 +4,7 @@ import { toast } from "react-hot-toast";
 import { useNavigate, Link } from "react-router-dom";
 
 const Register = () => {
-  const { settoken, setisAuth, setuser, axios } = useContext(AppContext);
+  const { setSession, axios } = useContext(AppContext);
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -19,19 +19,14 @@ const Register = () => {
         password,
       });
       if (data.success) {
-        localStorage.setItem("token", data.token);
-        settoken(data.token);
-        setisAuth(true);
-        setuser(data.user);
-        // eslint-disable-next-line
-        axios.defaults.headers.common["Authorization"] = " " + data.token;
+        setSession(data.token, data.user);
         toast.success("Successfully registered!");
         navigate("/");
       } else {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || "Registration failed");
     }
   };
 
@@ -74,6 +69,7 @@ const Register = () => {
           </label>
           <input
             type="password"
+            minLength="8"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required

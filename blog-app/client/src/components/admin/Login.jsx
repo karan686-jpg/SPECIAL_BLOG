@@ -5,7 +5,7 @@ import '../../App.css'
 import { toast } from 'react-hot-toast';
 
 const Login = () => {
-  const { setisAuth, settoken,axios } = useContext(AppContext);
+  const { setSession, axios } = useContext(AppContext);
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
@@ -16,10 +16,7 @@ const Login = () => {
     try{
     const {data}= await axios.post('/api/admin/login',{email,password})
      if(data.success){
-      setisAuth(true);
-      localStorage.setItem('token', data.token);
-      settoken(data.token);
-      axios.defaults.headers.common['Authorization']=` ${data.token}`;
+      setSession(data.token, data.user);
       navigate('/admin');
      }
      else{
@@ -27,7 +24,7 @@ const Login = () => {
      } 
     }
     catch(error){
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || "Login failed");
     }
   }
     
@@ -79,4 +76,4 @@ const Login = () => {
   )
 }
 
-export default Login; 
+export default Login;

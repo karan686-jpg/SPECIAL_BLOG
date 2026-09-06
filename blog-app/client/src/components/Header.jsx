@@ -1,42 +1,78 @@
-import React, { useContext } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { AppContext } from "../../context/AppContext";
-import { Search } from "lucide-react";
+import { Search, X, Loader2 } from "lucide-react";
+import useDebounce from "../hooks/useDebounce";
 
 const Header = () => {
   const { search, setsearch } = useContext(AppContext);
+  const [inputValue, setInputValue] = useState(search || "");
+  const debouncedValue = useDebounce(inputValue, 350);
+
+  // Sync debounced input to global context only after user stops typing
+  useEffect(() => {
+    setsearch(debouncedValue);
+  }, [debouncedValue, setsearch]);
+
+  // Handle external search reset
+  useEffect(() => {
+    if (!search && inputValue) {
+      setInputValue("");
+    }
+  }, [search]);
+
+  const isDebouncing = inputValue.trim() !== debouncedValue.trim();
+
+  const handleClear = () => {
+    setInputValue("");
+    setsearch("");
+  };
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 text-white pt-24 pb-32">
-      {/* Decorative background shapes */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-      <div className="absolute top-0 right-1/4 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-
-      <div className="max-w-4xl mx-auto text-center relative z-10 px-4">
-        <h1 className="text-5xl md:text-6xl font-extrabold mb-6 tracking-tight">
-          Your ideas,{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-            amplified.
-          </span>
+    <section className="pt-16 pb-12 sm:pt-20 sm:pb-16 border-b border-gray-100 dark:border-gray-800/80 bg-gradient-to-b from-gray-50/70 to-white dark:from-gray-900/30 dark:to-gray-950">
+      <div className="max-w-4xl mx-auto text-center px-4 sm:px-6">
+        <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-gray-900 dark:text-white leading-[1.12] mb-4">
+          Stories, ideas & perspectives.
         </h1>
-        <p className="text-xl opacity-90 font-light mb-10 max-w-2xl mx-auto">
-          Discover stories, thinking, and expertise from writers on any topic.
+        <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 font-normal max-w-xl mx-auto mb-8 leading-relaxed">
+          Thoughtful writing on technology, architecture, creative thinking, and modern software craft.
         </p>
 
-        {/* Premium Search Bar */}
-        <div className="relative max-w-2xl mx-auto group">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Search className="h-6 w-6 text-gray-400 group-focus-within:text-purple-500 transition-colors" />
+        {/* Minimal Search Bar (Linear/Vercel Style with Debounce) */}
+        <div className="relative max-w-xl mx-auto">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+            {isDebouncing ? (
+              <Loader2 className="h-4 w-4 text-purple-600 dark:text-purple-400 animate-spin" />
+            ) : (
+              <Search className="h-4 w-4" />
+            )}
           </div>
           <input
             type="text"
-            className="w-full pl-14 pr-4 py-4 text-lg bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-white placeholder-gray-300 focus:bg-white focus:text-gray-900 focus:placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-purple-500/50 transition-all duration-300 shadow-2xl"
-            placeholder="Search blogs by title or category..."
-            value={search}
-            onChange={(e) => setsearch(e.target.value)}
+            className="w-full pl-10 pr-10 py-3 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-full text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:border-purple-500 dark:focus:border-purple-500 focus:ring-2 focus:ring-purple-500/10 transition-all shadow-xs"
+            placeholder="Search stories by topic, title, or keywords..."
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
           />
+          {inputValue && (
+            <button
+              onClick={handleClear}
+              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+              title="Clear search"
+              type="button"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
+
+        {/* Subtle Debounce Status Pill */}
+        {isDebouncing && (
+          <p className="text-[11px] text-purple-600 dark:text-purple-400 mt-2 font-mono animate-pulse">
+            Searching as you finish typing...
+          </p>
+        )}
       </div>
-    </div>
+    </section>
   );
 };
 

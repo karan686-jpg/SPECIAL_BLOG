@@ -1,8 +1,8 @@
-@import "tailwindcss";
+@reference "tailwindcss";
 
 @layer components {
   .search {
-    @apply w-full px-3 py-2 rounded-md border border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 transition-all duration-200 ease-in-out focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none;
+    @apply w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all duration-200 ease-in-out focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900/50 focus:outline-none;
   }
 
   .butt {
@@ -11,7 +11,6 @@
 
   .butt1 {
     @apply px-7 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold transition-all duration-300 hover:-translate-y-1 active:scale-95 cursor-pointer;
-
     box-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
   }
 
@@ -25,7 +24,6 @@
 
   .btn-home {
     @apply flex items-center gap-3 px-7 py-2.5 text-lg font-bold rounded-2xl text-white shadow-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-105 active:scale-95 cursor-pointer;
-
     box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
   }
 
@@ -34,7 +32,7 @@
   }
 
   .blog-card {
-    @apply bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer p-2 m-2 flex flex-col;
+    @apply bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer p-2 m-2 flex flex-col border border-transparent dark:border-gray-800;
   }
 
   .blog-image {
@@ -46,15 +44,15 @@
   }
 
   .blog-category {
-    @apply text-xs font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full m-1.5 w-fit;
+    @apply text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1 rounded-full m-1.5 w-fit;
   }
 
   .blog-title {
-    @apply text-lg font-bold text-gray-900 leading-snug hover:text-indigo-600 transition-colors duration-200 m-1;
+    @apply text-lg font-bold text-gray-900 dark:text-gray-100 leading-snug hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200 m-1;
   }
 
   .blog-description {
-    @apply text-sm text-gray-600 leading-relaxed line-clamp-3 m-1;
+    @apply text-sm text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-3 m-1;
   }
 
   .blog-section {
@@ -74,41 +72,78 @@
   }
 
   .navbar {
-    @apply sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-white/80 backdrop-blur-md border-b border-gray-200;
+    @apply sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-white/80 dark:bg-gray-950/85 backdrop-blur-md border-b border-gray-200 dark:border-gray-800;
   }
 
   .back {
-    @apply inline-flex items-center my-1.5 mx-3 px-4 py-1 rounded-lg font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 transition-colors duration-300 ease-in-out shadow-sm;
+    @apply inline-flex items-center my-1.5 mx-3 px-4 py-1 rounded-lg font-medium text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors duration-300 ease-in-out shadow-sm;
   }
 
   .input {
-    @apply w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 m-3 focus:ring-blue-500;
+    @apply w-full px-4 py-2 border dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 m-3 focus:ring-purple-500;
   }
 
   .textarea {
-    @apply w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mx-4 my-2;
+    @apply w-full px-4 py-2 border dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 mx-4 my-2;
   }
 
   .stats {
-    @apply w-[27vh] border-2 overflow-hidden mx-2 h-[15vh] rounded-2xl p-1 flex items-center gap-2;
+    @apply w-[27vh] border-2 dark:border-gray-800 overflow-hidden mx-2 h-[15vh] rounded-2xl p-1 flex items-center gap-2;
   }
 
   .active-side {
-    @apply bg-indigo-50 text-indigo-600 font-medium shadow-sm;
+    @apply bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-medium shadow-sm;
   }
 
   .side {
-    @apply text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200 ease-in-out;
+    @apply text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200 ease-in-out;
   }
 
   /* Improved Categories / Pills */
   .category-pill {
-    @apply px-5 py-2 rounded-full font-medium transition-all duration-300 ease-in-out transform hover:-translate-y-0.5 shadow-sm hover:shadow-md border border-gray-100;
+    @apply px-5 py-2 rounded-full font-medium transition-all duration-300 ease-in-out transform hover:-translate-y-0.5 shadow-sm hover:shadow-md border border-gray-100 dark:border-gray-800;
   }
   .category-pill.active {
-    @apply bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-indigo-200 border-transparent;
+    @apply bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-indigo-200 dark:shadow-none border-transparent;
   }
   .category-pill.inactive {
-    @apply bg-white text-gray-600 hover:bg-gray-50;
+    @apply bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-100 dark:border-gray-800;
+  }
+
+  /* Article Typography & Code Block Styling */
+  .blog-content pre {
+    @apply rounded-2xl my-6 p-5 overflow-x-auto relative shadow-md text-sm border border-gray-700/60 bg-gray-950 text-gray-100;
+  }
+
+  .blog-content code {
+    @apply font-mono text-sm px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-purple-600 dark:text-purple-400;
+  }
+
+  .blog-content pre code {
+    @apply bg-transparent text-inherit p-0;
+  }
+
+  .blog-content h2 {
+    @apply text-2xl sm:text-3xl font-bold mt-10 mb-4 text-gray-900 dark:text-gray-100 tracking-tight scroll-mt-24;
+  }
+
+  .blog-content h3 {
+    @apply text-xl sm:text-2xl font-bold mt-8 mb-3 text-gray-800 dark:text-gray-200 tracking-tight scroll-mt-24;
+  }
+
+  .blog-content p {
+    @apply mb-5 leading-relaxed text-gray-700 dark:text-gray-300 text-base sm:text-lg;
+  }
+
+  .blog-content ul {
+    @apply list-disc list-inside mb-6 space-y-2 text-gray-700 dark:text-gray-300;
+  }
+
+  .blog-content ol {
+    @apply list-decimal list-inside mb-6 space-y-2 text-gray-700 dark:text-gray-300;
+  }
+
+  .blog-content blockquote {
+    @apply border-l-4 border-purple-500 pl-4 my-6 italic text-gray-600 dark:text-gray-400;
   }
 }

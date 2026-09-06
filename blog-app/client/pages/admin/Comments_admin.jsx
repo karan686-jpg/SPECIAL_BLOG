@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useCallback } from "react";
 import { toast } from "react-hot-toast";
 import { AppContext } from "../../context/AppContext";
 
@@ -6,7 +6,7 @@ const Comments_admin = () => {
   const { axios } = useContext(AppContext);
   const [comments, setComments] = useState([]);
 
-  const fetchComments = async () => {
+  const fetchComments = useCallback(async () => {
     try {
       const { data } = await axios.get("/api/admin/comments");
       if (data.success) {
@@ -18,7 +18,7 @@ const Comments_admin = () => {
       console.error("Error fetching comments", error);
       toast.error(error.message);
     }
-  };
+  }, [axios]);
 
   const removeComment = async (id) => {
     try {
@@ -29,8 +29,7 @@ const Comments_admin = () => {
       } else {
         toast.error(data.message || "Error deleting comment");
       }
-    } catch (error) {
-      console.error(error);
+    } catch {
       toast.error("Error deleting comment");
     }
   };
@@ -44,15 +43,15 @@ const Comments_admin = () => {
       } else {
         toast.error(data.message || "Error approving comment");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error approving comment");
     }
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    fetchComments();
-  }, []);
+    const timer = window.setTimeout(() => { void fetchComments(); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [fetchComments]);
 
   return (
     <div className="flex-1 pt-5 px-5 sm:pt-12 sm:pl-16">
@@ -80,9 +79,9 @@ const Comments_admin = () => {
             </tr>
           </thead>
           <tbody>
-            {comments.map((item, index) => {
+            {comments.map((item) => {
               return (
-                <tr key={index} className="bg-white border-b hover:bg-gray-50">
+                <tr key={item._id} className="bg-white border-b hover:bg-gray-50">
                   <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
                     {item.name ? item.name : "Anonymous"}
                   </td>

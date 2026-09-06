@@ -8,7 +8,7 @@ const Home = () => {
   return (
     // <input className='search'placeholder='search' value={search}  onChange={(e)=>{setsearch(e.target.value)}}   />
 
-    <div>
+    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-200">
       <Helmet>
         <title>Blogify | Your Own Blogging Platform</title>
         <meta
@@ -18,9 +18,9 @@ const Home = () => {
       </Helmet>
       <Navbar />
       <Header />
-      <section className="blog-section">
+      <main>
         <BlogList />
-      </section>
+      </main>
     </div>
   );
 };

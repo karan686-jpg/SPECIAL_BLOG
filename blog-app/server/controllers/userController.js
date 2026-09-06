@@ -1,93 +1,59 @@
-import jwt from 'jsonwebtoken';
-import User from '../models/user.js';
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import User from "../models/user.js";
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const issueToken = (user) => jwt.sign(
+  { role: user.role }, process.env.JWT_SECRET,
+  { subject: user._id.toString(), expiresIn: "2h", issuer: "blogify-api", audience: "blogify-client" },
+);
+const publicUser = (user) => ({ id: user._id, name: user.name, email: user.email, profileImage: user.profileImage, role: user.role });
 
 export const registerUser = async (req, res) => {
-    try {
-        const { name, email, password, profileImage } = req.body;
+  try {
+    const name = req.body.name?.trim();
+    const email = req.body.email?.trim().toLowerCase();
+    const { password, profileImage } = req.body;
+    if (!name || !email || !password) return res.status(400).json({ success: false, message: "Name, email, and password are required" });
+    if (!emailPattern.test(email)) return res.status(400).json({ success: false, message: "Enter a valid email address" });
+    if (name.length > 80 || password.length < 8 || password.length > 128) return res.status(400).json({ success: false, message: "Use a name up to 80 characters and a password of 8–128 characters" });
+    if (await User.exists({ email })) return res.status(409).json({ success: false, message: "Email is already registered" });
 
-        if (!name || !email || !password) {
-            return res.json({ success: false, message: 'Missing required fields' });
-        }
-
-        const exactEmailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!exactEmailRegex.test(email)) {
-            return res.json({ success: false, message: 'Invalid email format' });
-        }
-
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.json({ success: false, message: 'Email is already registered' });
-        }
-
-        const newUser = new User({
-            name,
-            email,
-            password, // NOTE: In a production app, use bcrypt here. For simplicity in this project per the user's style, we keep it straightforward, but we strongly recommend hashing.
-            profileImage: profileImage || 'https://via.placeholder.com/150'
-        });
-
-        await newUser.save();
-
-        const token = jwt.sign({ id: newUser._id, email: newUser.email }, process.env.JWT_SECRET);
-
-        const userData = {
-            id: newUser._id,
-            name: newUser.name,
-            email: newUser.email,
-            profileImage: newUser.profileImage,
-            role: newUser.role
-        };
-
-        res.json({ success: true, token, user: userData, message: "Registered successfully" });
-    } catch (error) {
-        res.json({ success: false, message: error.message });
-    }
-}
+    const newUser = await User.create({ name, email, password: await bcrypt.hash(password, 12), profileImage: typeof profileImage === "string" ? profileImage : undefined });
+    return res.status(201).json({ success: true, token: issueToken(newUser), user: publicUser(newUser), message: "Registered successfully" });
+  } catch (error) {
+    if (error?.code === 11000) return res.status(409).json({ success: false, message: "Email is already registered" });
+    return res.status(500).json({ success: false, message: "Unable to register account" });
+  }
+};
 
 export const loginUser = async (req, res) => {
-    try {
-        const { email, password } = req.body;
-
-        const user = await User.findOne({ email });
-
-        if (!user || user.password !== password) {
-            return res.json({ success: false, message: 'Invalid email or password' });
-        }
-
-        const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET);
-
-        const userData = {
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            profileImage: user.profileImage,
-            role: user.role
-        };
-
-        res.json({ success: true, token, user: userData });
-    } catch (error) {
-        res.json({ success: false, message: error.message });
+  try {
+    const email = req.body.email?.trim().toLowerCase();
+    const { password } = req.body;
+    if (!email || !password) return res.status(400).json({ success: false, message: "Email and password are required" });
+    const user = await User.findOne({ email });
+    if (!user) return res.status(401).json({ success: false, message: "Invalid email or password" });
+    const isHashedPassword = user.password.startsWith("$2a$") || user.password.startsWith("$2b$") || user.password.startsWith("$2y$");
+    const passwordMatches = isHashedPassword ? await bcrypt.compare(password, user.password) : password === user.password;
+    if (!passwordMatches) return res.status(401).json({ success: false, message: "Invalid email or password" });
+    if (!isHashedPassword) {
+      user.password = await bcrypt.hash(password, 12);
+      await user.save();
     }
-}
+    return res.json({ success: true, token: issueToken(user), user: publicUser(user) });
+  } catch {
+    return res.status(500).json({ success: false, message: "Unable to log in" });
+  }
+};
 
 export const getUserProfile = async (req, res) => {
-    try {
-        if (req.adminEmail) {
-            return res.json({ 
-                success: true, 
-                user: { id: "admin", role: 'admin', name: 'Admin', email: req.adminEmail, profileImage: 'https://via.placeholder.com/150' } 
-            });
-        }
-
-        const userId = req.user; 
-        const user = await User.findById(userId).select('-password');
-        
-        if (!user) {
-            return res.json({ success: false, message: 'User not found' });
-        }
-
-        res.json({ success: true, user });
-    } catch (error) {
-        res.json({ success: false, message: error.message });
-    }
-}
+  try {
+    if (req.auth.role === "admin") return res.json({ success: true, user: { id: "admin", role: "admin", name: "Admin", email: process.env.ADMIN_EMAIL } });
+    const user = await User.findById(req.user).select("-password");
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    return res.json({ success: true, user: publicUser(user) });
+  } catch {
+    return res.status(500).json({ success: false, message: "Unable to load profile" });
+  }
+};

@@ -4,7 +4,7 @@ import { toast } from "react-hot-toast";
 import { useNavigate, Link } from "react-router-dom";
 
 const PublicLogin = () => {
-  const { settoken, setisAuth, setuser, axios } = useContext(AppContext);
+  const { setSession, axios } = useContext(AppContext);
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -14,19 +14,14 @@ const PublicLogin = () => {
     try {
       const { data } = await axios.post("/api/user/login", { email, password });
       if (data.success) {
-        localStorage.setItem("token", data.token);
-        settoken(data.token);
-        setisAuth(true);
-        setuser(data.user);
-        // eslint-disable-next-line
-        axios.defaults.headers.common["Authorization"] = " " + data.token;
+        setSession(data.token, data.user);
         toast.success("Successfully logged in!");
         navigate("/");
       } else {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || "Login failed");
     }
   };
 

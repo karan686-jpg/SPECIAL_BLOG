@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useReducer, useState } from "react";
 import { FileText } from "lucide-react";
 import BlogTableItem from "../../src/components/admin/BlogTableItem";
 import { AppContext } from "../../context/AppContext";
@@ -6,6 +6,7 @@ import { toast } from "react-hot-toast";
 const ListBlog = () => {
   // Mock data
   const [blogs, setblogs] = useState([]);
+  const [refreshKey, refresh] = useReducer((value) => value + 1, 0);
   const { axios } = useContext(AppContext);
 
   const handleDelete = async (id) => {
@@ -13,7 +14,7 @@ const ListBlog = () => {
       const { data } = await axios.post("/api/blog/delete", { id });
       if (data.success) {
         toast.success("Blog deleted");
-        fetchBlogs();
+        refresh();
       } else {
         toast.error(data.message);
       }
@@ -27,7 +28,7 @@ const ListBlog = () => {
       const { data } = await axios.post("/api/blog/toggle-publish", { id });
       if (data.success) {
         toast.success(data.message);
-        fetchBlogs();
+        refresh();
       } else {
         toast.error(data.message);
       }
@@ -36,17 +37,14 @@ const ListBlog = () => {
     }
   };
 
-  const fetchBlogs = async () => {
-    try {
-      const { data } = await axios.get("/api/admin/blogs");
-      data.success ? setblogs(data.blogs) : toast.error(data.message);
-    } catch (error) {
-      toast.error(error.message);
-    }
-  };
   useEffect(() => {
-    fetchBlogs();
-  }, []);
+    const timer = window.setTimeout(() => {
+      void axios.get("/api/admin/blogs")
+        .then(({ data }) => data.success ? setblogs(data.blogs) : toast.error(data.message))
+        .catch(() => toast.error("Unable to load blogs"));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [axios, refreshKey]);
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -69,6 +67,7 @@ const ListBlog = () => {
                 <th className="px-6 py-4">#</th>
                 <th className="px-6 py-4 w-1/3">Blog Title</th>
                 <th className="px-6 py-4">Author</th>
+                <th className="px-6 py-4">Status</th>
                 <th className="px-6 py-4">Date</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
@@ -76,7 +75,7 @@ const ListBlog = () => {
             <tbody className="divide-y divide-gray-100">
               {blogs.map((blog, index) => (
                 <BlogTableItem
-                  key={blog.id}
+                  key={blog._id}
                   blog={blog}
                   index={index}
                   onUnpublish={handleUnpublish}
